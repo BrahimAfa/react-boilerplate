@@ -4,7 +4,7 @@ import React, { PropTypes } from 'react';
 import htmlescape from 'htmlescape';
 
 // We use this component only on the server side.
-export default function HtmlDocument({ lang, head, css, appMarkup, state, assets, webpackDllNames }) {
+export default function HtmlDocument({ lang, head, css, appMarkup, state, assets, webpackDllNames, localeDataScript }) {
   const attrs = head.htmlAttributes.toComponent();
   return (
     <html lang={lang} {...attrs}>
@@ -49,6 +49,9 @@ export default function HtmlDocument({ lang, head, css, appMarkup, state, assets
         {/* our app state */}
         <script dangerouslySetInnerHTML={{ __html: `APP_STATE = ${htmlescape(state)}` }} />
 
+        {/* intl locale*/}
+        <script dangerouslySetInnerHTML={{ __html: localeDataScript }} />
+
         {/* dev only */}
         {(webpackDllNames || []).map((dllName) =>
           <script data-dll key={dllName} src={`/${dllName}.dll.js`}></script>
@@ -67,6 +70,7 @@ export default function HtmlDocument({ lang, head, css, appMarkup, state, assets
 HtmlDocument.propTypes = {
   lang: PropTypes.string.isRequired,
   head: PropTypes.object.isRequired,
+  localeDataScript: PropTypes.string.isRequired,
   css: PropTypes.string.isRequired,
   appMarkup: PropTypes.string.isRequired,
   state: PropTypes.object.isRequired,

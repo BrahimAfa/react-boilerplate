@@ -9,6 +9,8 @@
 import 'babel-polyfill';
 import { browserHistory } from 'react-router';
 
+import { addLocaleData } from 'react-intl';
+
 // Load the favicon, the manifest.json file and the .htaccess file
 /* eslint-disable import/no-webpack-loader-syntax */
 import '!file-loader?name=[name].[ext]!./images/favicon.ico';
@@ -42,10 +44,16 @@ import configureStore from './store';
 import renderInBrowser from './renderInBrowser';
 import createRoutes from './routes';
 // Import i18n messages
-import { translationMessages as messages } from './i18n';
+// import { translationMessages as messages } from './i18n';
 
 // The initial state of the app can be set on the server
 const initialState = window.APP_STATE || {};
+
+addLocaleData(window.ReactIntlLocaleData[initialState.language.locale]);
+
+console.log('---> INITIAL_STATE', initialState);
+
+const messages = initialState.messages;
 
 // Create redux store with history
 // this uses the singleton browserHistory provided by react-router

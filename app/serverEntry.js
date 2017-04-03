@@ -14,6 +14,7 @@ import { createMemoryHistory, match, RouterContext } from 'react-router';
 import { END } from 'redux-saga';
 import Helmet from 'react-helmet';
 import styleSheet from 'styled-components/lib/models/StyleSheet';
+import { addLocaleData } from 'react-intl';
 
 // Global styles should be injected before any other scoped style, so make sure
 // this file is imported before any styled component.
@@ -29,19 +30,19 @@ import { changeLocale } from 'containers/LanguageProvider/actions';
 import syncHistoryWithStore from 'setup/syncHistoryWithStore';
 import monitorSagas from 'utils/monitorSagas';
 
-import { appLocales, translationMessages } from './i18n';
-
-function renderAppToString(store, renderProps) {
+function renderAppToString(store, renderProps, messages) {
   return renderToString(
-    <AppRoot store={store} messages={translationMessages}>
+    <AppRoot store={store} messages={messages}>
       <RouterContext {...renderProps} />
     </AppRoot>
   );
 }
 
-async function renderHtmlDocument({ store, renderProps, sagasDone, assets, webpackDllNames }) {
+async function renderHtmlDocument({ store, renderProps, sagasDone, assets, webpackDllNames, locale, localeDataScript, messages }) {
+  addLocaleData(localeDataScript);
+
   // 1st render phase - triggers the sagas
-  renderAppToString(store, renderProps);
+  renderAppToString(store, renderProps, messages);
 
   // send signal to sagas that we're done
   store.dispatch(END);
@@ -53,7 +54,7 @@ async function renderHtmlDocument({ store, renderProps, sagasDone, assets, webpa
   const state = store.getState().toJS();
 
   // 2nd render phase - the sagas triggered in the first phase are resolved by now
-  const appMarkup = renderAppToString(store, renderProps);
+  const appMarkup = renderAppToString(store, renderProps, messages);
 
   // capture the generated css
   const css = styleSheet.injected
@@ -63,11 +64,12 @@ async function renderHtmlDocument({ store, renderProps, sagasDone, assets, webpa
   const doc = renderToStaticMarkup(
     <HtmlDocument
       appMarkup={appMarkup}
-      lang={state.language.locale}
+      lang={locale}
       state={state}
       head={Helmet.rewind()}
       assets={assets}
       css={css}
+      localeDataScript={localeDataScript}
       webpackDllNames={webpackDllNames}
     />
   );
@@ -78,9 +80,10 @@ function is404(routes) {
   return routes.some((r) => r.name === 'notfound');
 }
 
-function renderAppToStringAtLocation(url, { webpackDllNames = [], assets, lang }, callback) {
+function renderAppToStringAtLocation(url, { webpackDllNames = [], assets, req }, callback) {
+  const { locale, localeDataScript, messages } = req;
   const memHistory = createMemoryHistory(url);
-  const store = createStore({}, memHistory);
+  const store = createStore({ messages }, memHistory);
 
   syncHistoryWithStore(memHistory, store);
 
@@ -88,7 +91,7 @@ function renderAppToStringAtLocation(url, { webpackDllNames = [], assets, lang }
 
   const sagasDone = monitorSagas(store);
 
-  store.dispatch(changeLocale(lang));
+  store.dispatch(changeLocale(locale));
 
   match({ routes, location: url }, (error, redirectLocation, renderProps) => {
     if (error) {
@@ -96,7 +99,7 @@ function renderAppToStringAtLocation(url, { webpackDllNames = [], assets, lang }
     } else if (redirectLocation) {
       callback({ redirectLocation: redirectLocation.pathname + redirectLocation.search });
     } else if (renderProps) {
-      renderHtmlDocument({ store, renderProps, sagasDone, assets, webpackDllNames })
+      renderHtmlDocument({ store, renderProps, sagasDone, assets, webpackDllNames, locale, localeDataScript, messages })
         .then((html) => {
           const notFound = is404(renderProps.routes);
           callback({ html, notFound });
@@ -109,6 +112,5 @@ function renderAppToStringAtLocation(url, { webpackDllNames = [], assets, lang }
 }
 
 export {
-  appLocales,
   renderAppToStringAtLocation,
 };

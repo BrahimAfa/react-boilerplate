@@ -36,9 +36,11 @@ function ensureAllGeneratedFilesExist() {
 if (require.main === module) {
   ensureAllGeneratedFilesExist();
 
+  const i18nMiddleware = require('./middlewares/i18nMiddleware');
   const handleSSR = require('./middlewares/handleSSR');
 
   const app = express();
+  app.use(i18nMiddleware);
   app.use(handleSSR);
 
   const server = http.createServer(app).listen(port, (err) => {

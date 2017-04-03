@@ -5,7 +5,6 @@ const assets = require('./generated.assets.json'); // eslint-disable-line import
 
 const serverEntry = require('./generated.serverEntry'); // eslint-disable-line import/no-unresolved
 const renderAppToStringAtLocation = serverEntry.renderAppToStringAtLocation;
-const appLocales = serverEntry.appLocales;
 
 function extractWebpackDllNamesFromPackage() {
   if (process.env.NODE_ENV === 'production') return [];
@@ -20,9 +19,9 @@ function printError(e) {
 
 module.exports = function handleSSR(req, res) {
   const options = {
+    req,
     assets,
     webpackDllNames: extractWebpackDllNamesFromPackage(),
-    lang: req.acceptsLanguages(appLocales),
   };
 
   renderAppToStringAtLocation(req.url, options, (response) => {
